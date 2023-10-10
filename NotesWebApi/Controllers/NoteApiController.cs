@@ -16,14 +16,19 @@ namespace NotesWebApi.Controllers
         //{
         //    _logger = logger;
         //}
+        private readonly AppDbContext _dbContext;
+        public NoteApiController(AppDbContext dbContext)
+        {
+            _dbContext = dbContext;
+        }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<IEnumerable<Note>> GetNotes()
         {
-            //_logger.LogInformation("Getting all notes");
-            return Ok(NoteStore.notesList);
+            //_ logger.LogInformation("Getting all notes");
+            return Ok(_dbContext.Notes.ToList());
         }
 
 
@@ -33,7 +38,7 @@ namespace NotesWebApi.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<Note> GetNote(int id)
         {
-            var note = NoteStore.notesList.FirstOrDefault(n => n.Id == id);
+            var note = _dbContext.Notes.FirstOrDefault(n => n.Id == id);
             if (note == null)
             {
                 //_logger.LogError("Get note error with id" + id.ToString());
@@ -48,7 +53,7 @@ namespace NotesWebApi.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<Note> CreateNote([FromBody]Note note)
         {
-            if(NoteStore.notesList.FirstOrDefault(n => n.Title.ToLower() == note.Title.ToLower()) != null)
+            if(_dbContext.Notes.FirstOrDefault(n => n.Title.ToLower() == note.Title.ToLower()) != null)
             {
                 ModelState.AddModelError("CreateError", "This title already exists!");
                 return BadRequest(ModelState);
@@ -56,8 +61,10 @@ namespace NotesWebApi.Controllers
             }
 
             if (note == null) return BadRequest(note);
-            note.Id = NoteStore.notesList.OrderByDescending(n => n.Id).FirstOrDefault().Id + 1;
-            NoteStore.notesList.Add(note);
+            _dbContext.Notes.Add(note); // add element ib db with entity
+            _dbContext.SaveChanges();
+            //note.Id = NoteStore.notesList.OrderByDescending(n => n.Id).FirstOrDefault().Id + 1;
+            //NoteStore.notesList.Add(note);
 
             //return Ok(note);
             return CreatedAtRoute("GetNote", new { id = note.Id }, note);
@@ -69,12 +76,13 @@ namespace NotesWebApi.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public IActionResult DeleteNote(int id)
         {
-            var note = NoteStore.notesList.FirstOrDefault(n => n.Id == id);
+            var note = _dbContext.Notes.FirstOrDefault(n => n.Id == id);
             if (note == null)
             {
                 return NotFound();
             }
-            NoteStore.notesList.Remove(note);
+            _dbContext.Notes.Remove(note);
+            _dbContext.SaveChanges();
             return NoContent();
         }
 
@@ -86,11 +94,14 @@ namespace NotesWebApi.Controllers
         {
             if (note == null) return BadRequest();
 
-            var old_note = NoteStore.notesList.FirstOrDefault(n => n.Id == note.Id);
+            //var old_note = NoteStore.notesList.FirstOrDefault(n => n.Id == note.Id);
 
-            if (old_note == null) return BadRequest();
-            old_note.Title = note.Title;
-            old_note.Body = note.Body;
+            //if (old_note == null) return BadRequest();
+            //old_note.Title = note.Title;
+            //old_note.Body = note.Body;
+
+            _dbContext.Notes.Update(note);
+            _dbContext.SaveChanges();
 
             return NoContent();
         }
