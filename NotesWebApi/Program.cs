@@ -11,6 +11,9 @@ namespace NotesWebApi
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // Включаем CORS в приложении
+            builder.Services.AddCors();
+
             // Add services to the container.
             // добавляем контекст работы с базой данных
             builder.Services.AddDbContext<AppDbContext>(options => {
@@ -23,6 +26,14 @@ namespace NotesWebApi
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
+
+            // Настраиваем CORS
+            app.UseCors(options =>
+            {
+                options.AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader();
+            });
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
